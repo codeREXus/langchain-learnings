@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>AI Assistant</h1>
+        <form id="ai-form">
+            <label for="message">Your Prompt:</label>
+            <textarea id="message" name="message" rows="4" placeholder="e.g., What is the capital of India? Tell me a cool fact about it."></textarea>
+            
+            <label for="model">Model:</label>
+            <select id="model" name="model">
+                <option value="gemini">Gemini</option>
+            </select>
+            
+            <input type="submit" value="Generate" id="submit-button">
+        </form>
+        
+        <div id="response" aria-live="polite">Your response will appear here...</div>
+    </div>
+
+    <script>
+        document.getElementById('ai-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const message = document.getElementById('message').value;
+            const model = document.getElementById('model').value;
+            const responseDiv = document.getElementById('response');
+            const submitButton = document.getElementById('submit-button');
+
+            // Add a loading state
+            responseDiv.innerText = 'Generating response...';
+            submitButton.disabled = true;
+            submitButton.value = 'Working...';
+            
+            fetch('/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    'message': message,
+                    'model': model
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    responseDiv.innerText = 'Error: ' + data.error;
+                } else {
+                    if (data.capital && data.fact) {
+                        responseDiv.innerText = `Capital: ${data.capital}\nFact: ${data.fact}`;
+                    } else {
+                        responseDiv.innerText = JSON.stringify(data, null, 2);
+                    }
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                responseDiv.innerText = 'An unexpected error occurred. Please check the console for details.';
+            })
+            .finally(() => {
+                // Always re-enable the button
+                submitButton.disabled = false;
+                submitButton.value = 'Generate';
+            });
+        });
+    </script>
+</body>
+</html>
